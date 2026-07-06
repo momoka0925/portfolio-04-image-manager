@@ -2,7 +2,9 @@
 
 画像アップロード・サムネイル自動生成・重複検知を備えた画像管理アプリ。FastAPI + Next.js のフルスタック構成。Portfolio Master Plan の Project 04。
 
-**🔗 デモ: （デプロイ後に追記）** ｜ **API: （デプロイ後に追記）**
+**🔗 デモ: https://portfolio-04-image-manager.vercel.app/** ｜ **API: https://portfolio-04-image-manager-api.onrender.com/docs**
+
+> バックエンドはRender無料枠のためスリープします（初回アクセスは起動に50秒ほど）。アップロードした画像は再起動でリセットされます（無料枠の仕様）。
 
 ## 概要
 
