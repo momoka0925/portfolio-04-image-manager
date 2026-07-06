@@ -1,8 +1,7 @@
-# Render Blueprint: PostgreSQL + バックエンド(FastAPI/Docker)
-databases:
-  - name: portfolio-04-image-manager-db
-    plan: free
-
+# Render Blueprint: バックエンド(FastAPI/Docker)
+# 無料枠のPostgreSQLはアカウントに1つまでのため、本デモではメタデータをSQLite(揮発)で運用する。
+# （ファイル自体も無料枠のディスクで揮発するため、メタとファイルの状態が一致して整合的）
+# 本番でPostgreSQLを使う場合は DATABASE_URL を渡すだけで切り替わる（コードは postgresql:// を正規化済み）。
 services:
   - type: web
     name: portfolio-04-image-manager-api
@@ -13,9 +12,5 @@ services:
     dockerContext: .
     healthCheckPath: /health
     envVars:
-      - key: DATABASE_URL
-        fromDatabase:
-          name: portfolio-04-image-manager-db
-          property: connectionString
       - key: CORS_ORIGINS
         sync: false

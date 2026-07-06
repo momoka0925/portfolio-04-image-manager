@@ -141,8 +141,9 @@ portfolio-04-image-manager/
 
 ## デプロイ
 
-- フロント: Vercel（Root Directory=`frontend`） / API: Render（Docker, Free）+ PostgreSQL
-- 無料枠のディスクは揮発するため、再起動でアップロード済みファイルはリセットされます（メタデータはDBに残存）。実運用では `StorageBackend` を S3/R2 実装に差し替える想定です。
+- フロント: Vercel（Root Directory=`frontend`） / API: Render（Docker, Free）
+- 無料枠のディスクは揮発するため、再起動でアップロード済みファイルはリセットされます。本デモではメタデータも SQLite（揮発）で運用し、ファイルとメタデータの状態を一致させています（無料PostgreSQLはアカウントに1つの制限があり、Project 03 で使用中のため）。
+- 実運用では `StorageBackend` を S3/R2 実装に、DBを PostgreSQL に差し替える想定です（コードは `postgres://` の正規化・`DATABASE_URL` 切替に対応済み）。
 
 ## 今後の改善点
 
