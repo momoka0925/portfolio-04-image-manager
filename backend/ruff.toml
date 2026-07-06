@@ -1,0 +1,10 @@
+line-length = 100
+# 開発環境(ローカル)のPythonが3.10のため3.10互換で書く（デプロイは3.12）
+target-version = "py310"
+extend-exclude = ["migrations"]
+
+[lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[lint.flake8-bugbear]
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.File"]
