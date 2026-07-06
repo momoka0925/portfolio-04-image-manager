@@ -1,5 +1,6 @@
 import hashlib
 import logging
+import os
 import tempfile
 import uuid
 from typing import BinaryIO
@@ -43,48 +44,57 @@ class ImageService:
         if not self._extension_matches(filename, content_type):
             raise InvalidImageError("拡張子とMIMEタイプが一致しません")
 
-        # ストリームで一時ファイルへ保存しつつ sha256 とサイズを計算（メモリに全読みしない）
+        # ストリームで一時ファイルへ保存しつつ sha256 とサイズを計算（メモリに全読みしない）。
+        # 一時ファイルは最後に必ず削除する（delete=Falseのためリークさせない）。
         digest = hashlib.sha256()
         size = 0
         with tempfile.NamedTemporaryFile(delete=False) as tmp:
             tmp_path = tmp.name
-            while True:
-                chunk = upload.read(_CHUNK)
-                if not chunk:
-                    break
-                size += len(chunk)
-                if size > self._max_bytes:
-                    raise PayloadTooLargeError("ファイルサイズが上限を超えています")
-                digest.update(chunk)
-                tmp.write(chunk)
+        try:
+            with open(tmp_path, "wb") as tmp_w:
+                while True:
+                    chunk = upload.read(_CHUNK)
+                    if not chunk:
+                        break
+                    size += len(chunk)
+                    if size > self._max_bytes:
+                        raise PayloadTooLargeError("ファイルサイズが上限を超えています")
+                    digest.update(chunk)
+                    tmp_w.write(chunk)
 
-        if size == 0:
-            raise InvalidImageError("空のファイルです")
+            if size == 0:
+                raise InvalidImageError("空のファイルです")
 
-        sha256 = digest.hexdigest()
-        # 重複検知：同一内容が既にあれば保存せず既存を返す
-        existing = self._repo.get_by_sha256(sha256)
-        if existing is not None:
-            logger.info("duplicate upload detected: sha256=%s", sha256[:12])
-            return existing, False
+            sha256 = digest.hexdigest()
+            # 重複検知：同一内容が既にあれば保存せず既存を返す
+            existing = self._repo.get_by_sha256(sha256)
+            if existing is not None:
+                logger.info("duplicate upload detected: sha256=%s", sha256[:12])
+                return existing, False
 
-        width, height = self._verify_and_measure(tmp_path)
+            width, height = self._verify_and_measure(tmp_path)
 
-        storage_key = f"uploads/{uuid.uuid4().hex}.{ext}"
-        with open(tmp_path, "rb") as f:
-            self._storage.save_stream(storage_key, f)
+            storage_key = f"uploads/{uuid.uuid4().hex}.{ext}"
+            with open(tmp_path, "rb") as f:
+                self._storage.save_stream(storage_key, f)
 
-        image = self._repo.create(
-            storage_key=storage_key,
-            original_filename=filename,
-            content_type=content_type,
-            size=size,
-            width=width,
-            height=height,
-            sha256=sha256,
-        )
-        logger.info("image uploaded: id=%s size=%s", image.id, size)
-        return image, True
+            image = self._repo.create(
+                storage_key=storage_key,
+                original_filename=filename,
+                content_type=content_type,
+                size=size,
+                width=width,
+                height=height,
+                sha256=sha256,
+            )
+            logger.info("image uploaded: id=%s size=%s", image.id, size)
+            return image, True
+        finally:
+            # 一時ファイルを削除（存在しなくてもエラーにしない）
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
 
     def get(self, image_id: int) -> Image:
         image = self._repo.get(image_id)
